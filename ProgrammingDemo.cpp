@@ -1,0 +1,178 @@
+// ProgrammingDemo.cpp : Defines the entry point for the console application.
+//
+
+#include "stdafx.h"
+#include <stdio.h>
+#include <conio.h>
+#include "ensc-488.h"
+#include <iostream>
+#include <string>
+#include <cmath>
+#include <cstdio>
+using namespace std;
+
+// Robot link lengths
+const double L2 = 195.0;  // in mm
+const double L3 = 142.0;  // in mm
+
+// KIN: Compute tool pose (x,y,z,phi) given joint vector q
+void KIN(const JOINT& q, double& x, double& y, double& z, double& phi)
+{
+    double t1 = DEG2RAD(q[0]);
+    double t2 = DEG2RAD(q[1]);
+    double t4 = DEG2RAD(q[3]);
+
+    // Forward kinematics equations
+    x = L2 * cos(t1) + L3 * cos(t1 + t2);
+    y = L2 * sin(t1) + L3 * sin(t1 + t2);
+    z = -q[2];             // prismatic joint for vertical motion
+    phi = t1 + t2 + t4;    // orientation of end-effector
+}
+
+void WHERE(const JOINT& q)
+{
+    double x, y, z, phi;
+    KIN(q, x, y, z, phi);
+
+    printf("\nTool Frame Pose (x ; y ; z ; phi):\n");
+    printf("(%.2f ; %.2f ; %.2f ; %.2f rad)\n", x, y, z, phi);
+
+    // Display robot graphically (simulator)
+    DisplayConfiguration(const_cast<JOINT&>(q));
+}
+
+double evaluateSolution(const JOINT& solution, const JOINT& current, bool& valid) {
+	double maxDelta = 0;
+	
+	if (abs(solution[0]) >= 150) { cout << "joint 1 limits violated\n"; valid = false;};
+	if (abs(solution[1]) >= 100) { cout << "joint 2 limits violated\n"; valid = false;};
+	if ((solution[2] >= -100) || (solution[2] <= -200)) { cout << "joint 3 limits violated\n"; valid = false;};
+	if (abs(solution[3]) >= 160) { cout << "joint 4 limits violated\n"; valid = false;};
+
+
+	if (valid) {
+		maxDelta = max({
+		abs(current[0] - solution[0]),
+		abs(current[1] - solution[1]),
+		abs(current[2] - solution[2]),
+		abs(current[3] - solution[3])});
+	}
+	return maxDelta;
+}
+
+bool INVKIN(const vec4 &goal,const JOINT &start,JOINT &out,bool print) {
+
+	double x= goal.data[0], y= goal.data[1], z = goal.data[2], phi = goal.data[3];
+
+	JOINT curr_joint = { start[0],start[1],start[2],start[3] };
+
+	JOINT sol1 = { 0, 0, 0, 0 }, sol2 = { 0, 0, 0, 0 }; //Elbow up and Elbow down solutions
+
+	double r = sqrt(x * x + y * y);
+
+	double xy_angle = RAD2DEG(atan2(y, x));
+	double offset_angle = (r < 337) ? RAD2DEG(acos((a[2] * a[2] + r * r - a[3] * a[3]) / (2 * a[2] * r))) : 0;
+	double elbow_angle = (r < 337) ? 180 - RAD2DEG(acos((a[2] * a[2] + a[3] * a[3] - r * r) / (2 * a[2] * a[3]))) : 0;
+	double height = d[0] + d[2] - d[4] - d[5] - z;
+
+	sol1[0] = xy_angle - offset_angle;
+	sol2[0] = xy_angle + offset_angle;
+
+	sol1[1] = elbow_angle;
+	sol2[1] = -elbow_angle;
+
+	sol1[2] = sol2[2] = height;
+
+	sol1[3] = -phi + sol1[0] + sol1[1];
+	sol2[3] = -phi + sol2[0] + sol2[1];
+
+	//normalize to -180 to 180
+	sol1[0] = (sol1[0] < -180) ? sol1[0] + 360 : (sol1[0] > 180) ? sol1[0] - 360 : sol1[0];
+	sol2[0] = (sol2[0] < -180) ? sol2[0] + 360 : (sol2[0] > 180) ? sol2[0] - 360 : sol2[0];
+
+	sol1[3] = (sol1[3] > 180) ? sol1[3] - 360 : (sol1[3] < -180) ? sol1[3] + 360 : sol1[3];
+	sol2[3] = (sol2[3] > 180) ? sol2[3] - 360 : (sol2[3] < -180) ? sol2[3] + 360 : sol2[3];
+
+	//evaluate the solutions
+	bool valid1 = true, valid2 = true;
+	double bad_score1 = evaluateSolution(sol1, curr_joint, valid1);
+	double bad_score2 = evaluateSolution(sol2, curr_joint, valid2);
+
+	// Choose the best solution
+
+	if (valid1 && valid2) {
+		if (bad_score1 < bad_score2) {
+			if (print)cout << "\nFast solution:\ntheta 1: " << sol1[0] << "\ntheta 2: " << sol1[1] << "\nd3: " << sol1[2] << "\ntheta 4: " << sol1[3] << endl;
+			if (print)cout << "\nSlow solution:\ntheta 1: " << sol2[0] << "\ntheta 2: " << sol2[1] << "\nd3: " << sol2[2] << "\ntheta 4: " << sol2[3] << endl;
+			out[0] = sol1[0]; out[1] = sol1[1]; out[2] = sol1[2]; out[3] = sol1[3];
+		}
+		else {
+			if (print)cout << "\nFast solution:\ntheta 1: " << sol2[0] << "\ntheta 2: " << sol2[1] << "\nd3: " << sol2[2] << "\ntheta 4: " << sol2[3] << endl;
+			if (print)cout << "\nSlow solution:\ntheta 1: " << sol1[0] << "\ntheta 2: " << sol1[1] << "\nd3: " << sol1[2] << "\ntheta 4: " << sol1[3] << endl;
+			out[0] = sol2[0]; out[1] = sol2[1]; out[2] = sol2[2]; out[3] = sol2[3];
+		}
+	}
+	else if (valid1) {
+		if (print)cout << "One solution found\ntheta 1: " << sol1[0] << "\ntheta 2: " << sol1[1] << "\nd3: " << sol1[2] << "\ntheta 4: " << sol1[3] << endl;
+		out[0] = sol1[0]; out[1] = sol1[1]; out[2] = sol1[2]; out[3] = sol1[3];
+	}
+	else if (valid2) {
+		if (print)cout << "One solution found\ntheta 1: " << sol2[0] << "\ntheta 2: " << sol2[1] << "\nd3: " << sol2[2] << "\ntheta 4: " << sol2[3] << endl;
+		out[0] = sol2[0]; out[1] = sol2[1]; out[2] = sol2[2]; out[3] = sol2[3];
+	}
+	else {
+		if (print)cout << "No valid solutions within joint limits." << endl;
+		return false;
+	}
+	return true;
+}
+
+int main(int argc, char* argv[])
+{
+	JOINT q1 = {0, 0, -100, 0};
+	JOINT q2 = {90, 90, -200, 45};
+	printf("Keep this window in focus, and...\n");
+	
+
+	char ch;
+	int c;
+
+	const int ESC = 27;
+	
+	printf("1Press any key to continue \n");
+	printf("2Press ESC to exit \n");
+
+	c = _getch() ;
+
+	while (1)
+	{
+		
+		if (c != ESC)
+		{
+			printf("Press '1' or '2' \n");
+			ch = _getch();
+
+			if (ch == '1')
+			{
+				MoveToConfiguration(q1);
+				//DisplayConfiguration(q1);
+			}
+			else if (ch == '2')
+			{
+				MoveToConfiguration(q2);
+				//DisplayConfiguration(q2);
+			}
+
+			printf("Press any key to continue \n");
+			printf("Press q to exit \n");
+			c = _getch();
+		}
+		else
+			break;
+			
+		
+	}
+	
+
+	return 0;
+}
