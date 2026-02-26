@@ -1,7 +1,2 @@
 ﻿  ProgrammingDemo.cpp
-U:\Courses\ENSC488\Project-ROBSIM\ProgrammingDemo.cpp(79,36): error C2065: 'a': undeclared identifier
-U:\Courses\ENSC488\Project-ROBSIM\ProgrammingDemo.cpp(80,41): error C2065: 'a': undeclared identifier
-U:\Courses\ENSC488\Project-ROBSIM\ProgrammingDemo.cpp(81,18): error C2065: 'd': undeclared identifier
-U:\Courses\ENSC488\Project-ROBSIM\ProgrammingDemo.cpp(81,25): error C2065: 'd': undeclared identifier
-U:\Courses\ENSC488\Project-ROBSIM\ProgrammingDemo.cpp(81,32): error C2065: 'd': undeclared identifier
-U:\Courses\ENSC488\Project-ROBSIM\ProgrammingDemo.cpp(81,39): error C2065: 'd': undeclared identifier
+  ROBSIM.vcxproj -> U:\Courses\ENSC488\Project-ROBSIM\vs\ROBSIM\Debug\ROBSIM.exe

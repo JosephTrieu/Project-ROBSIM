@@ -10,11 +10,15 @@
 #include <string>
 #include <cmath>
 #include <cstdio>
+#include <algorithm>
 using namespace std;
 
 struct vec4 {
 	double data[4];
 };
+
+double d[6];
+double a[4];
 
 
 // Robot link lengths
@@ -139,7 +143,8 @@ bool INVKIN(const vec4 &goal, const JOINT &start, JOINT &out, bool print) {
 */
 int main(int argc, char* argv[])
 {
-
+	printf("hello world!");
+	return 0;
 }
 
 //OLD MAIN FOR ACTUAL DEMO
