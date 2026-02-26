@@ -5,11 +5,17 @@
 #include <stdio.h>
 #include <conio.h>
 #include "ensc-488.h"
+#include "StdAfx.h"
 #include <iostream>
 #include <string>
 #include <cmath>
 #include <cstdio>
 using namespace std;
+
+struct vec4 {
+	double data[4];
+};
+
 
 // Robot link lengths
 const double L2 = 195.0;  // in mm
@@ -60,7 +66,7 @@ double evaluateSolution(const JOINT& solution, const JOINT& current, bool& valid
 	return maxDelta;
 }
 
-bool INVKIN(const vec4 &goal,const JOINT &start,JOINT &out,bool print) {
+bool INVKIN(const vec4 &goal, const JOINT &start, JOINT &out, bool print) {
 
 	double x= goal.data[0], y= goal.data[1], z = goal.data[2], phi = goal.data[3];
 
@@ -127,52 +133,60 @@ bool INVKIN(const vec4 &goal,const JOINT &start,JOINT &out,bool print) {
 	return true;
 }
 
+// TEST HARNESS MAIN
+/*
+* Strategy: compute a bunch of verified correct test cases and use those to verify the correctness of the KIN, WHERE, INVKIN
+*/
 int main(int argc, char* argv[])
 {
-	JOINT q1 = {0, 0, -100, 0};
-	JOINT q2 = {90, 90, -200, 45};
-	printf("Keep this window in focus, and...\n");
-	
 
-	char ch;
-	int c;
-
-	const int ESC = 27;
-	
-	printf("1Press any key to continue \n");
-	printf("2Press ESC to exit \n");
-
-	c = _getch() ;
-
-	while (1)
-	{
-		
-		if (c != ESC)
-		{
-			printf("Press '1' or '2' \n");
-			ch = _getch();
-
-			if (ch == '1')
-			{
-				MoveToConfiguration(q1);
-				//DisplayConfiguration(q1);
-			}
-			else if (ch == '2')
-			{
-				MoveToConfiguration(q2);
-				//DisplayConfiguration(q2);
-			}
-
-			printf("Press any key to continue \n");
-			printf("Press q to exit \n");
-			c = _getch();
-		}
-		else
-			break;
-			
-		
-	}
-	
-
-	return 0;
 }
+
+//OLD MAIN FOR ACTUAL DEMO
+//int main(int argc, char* argv[])
+//{
+//	JOINT q1 = {0, 0, -100, 0};
+//	JOINT q2 = {90, 90, -200, 45};
+//	printf("Keep this window in focus, and...\n");
+//	
+//
+//	char ch;
+//	int c;
+//
+//	const int ESC = 27;
+//	
+//	printf("1Press any key to continue \n");
+//	printf("2Press ESC to exit \n");
+//
+//	c = _getch() ;
+//
+//	while (1)
+//	{
+//		
+//		if (c != ESC)
+//		{
+//			printf("Press '1' or '2' \n");
+//			ch = _getch();
+//
+//			if (ch == '1')
+//			{
+//				MoveToConfiguration(q1);
+//				DisplayConfiguration(q1);
+//			}
+//			else if (ch == '2')
+//			{
+//				MoveToConfiguration(q2);
+//				DisplayConfiguration(q2);
+//			}
+//
+//			printf("Press any key to continue \n");
+//			printf("Press q to exit \n");
+//			c = _getch();
+//		}
+//		else
+//			break;
+//	}
+//	
+//
+//	return 0;
+//}
