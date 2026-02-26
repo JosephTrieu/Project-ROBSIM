@@ -1,2 +1,3 @@
 ﻿  ProgrammingDemo.cpp
+U:\Courses\ENSC488\Project-ROBSIM\ProgrammingDemo.cpp(22,2): warning C4091: 'typedef ': ignored on left of 'vec4' when no variable is declared
   ROBSIM.vcxproj -> U:\Courses\ENSC488\Project-ROBSIM\vs\ROBSIM\Debug\ROBSIM.exe

@@ -13,13 +13,13 @@
 #include <algorithm>
 using namespace std;
 
-struct vec4 {
+// pre-declare these here because INVKIN uses them
+double a[6] = { 0, 0, 0, 0, 0, 0 };
+double d[6] = { 0, 0, 0, 0, 0, 0 };
+
+typedef struct vec4 {
 	double data[4];
 };
-
-double d[6];
-double a[4];
-
 
 // Robot link lengths
 const double L2 = 195.0;  // in mm
@@ -45,7 +45,7 @@ void WHERE(const JOINT& q)
     KIN(q, x, y, z, phi);
 
     printf("\nTool Frame Pose (x ; y ; z ; phi):\n");
-    printf("(%.2f ; %.2f ; %.2f ; %.2f rad)\n", x, y, z, phi);
+    printf("(%.2f ; %.2f ; %.2f ; %.2f deg)\n", x, y, z, RAD2DEG(phi));
 
     // Display robot graphically (simulator)
     DisplayConfiguration(const_cast<JOINT&>(q));
@@ -141,57 +141,82 @@ bool INVKIN(const vec4 &goal, const JOINT &start, JOINT &out, bool print) {
 /*
 * Strategy: compute a bunch of verified correct test cases and use those to verify the correctness of the KIN, WHERE, INVKIN
 */
-int main(int argc, char* argv[])
-{
-	printf("hello world!");
-	return 0;
-}
 
 //OLD MAIN FOR ACTUAL DEMO
-//int main(int argc, char* argv[])
-//{
-//	JOINT q1 = {0, 0, -100, 0};
-//	JOINT q2 = {90, 90, -200, 45};
-//	printf("Keep this window in focus, and...\n");
-//	
-//
-//	char ch;
-//	int c;
-//
-//	const int ESC = 27;
-//	
-//	printf("1Press any key to continue \n");
-//	printf("2Press ESC to exit \n");
-//
-//	c = _getch() ;
-//
-//	while (1)
-//	{
-//		
-//		if (c != ESC)
-//		{
-//			printf("Press '1' or '2' \n");
-//			ch = _getch();
-//
-//			if (ch == '1')
-//			{
-//				MoveToConfiguration(q1);
-//				DisplayConfiguration(q1);
-//			}
-//			else if (ch == '2')
-//			{
-//				MoveToConfiguration(q2);
-//				DisplayConfiguration(q2);
-//			}
-//
-//			printf("Press any key to continue \n");
-//			printf("Press q to exit \n");
-//			c = _getch();
-//		}
-//		else
-//			break;
-//	}
-//	
-//
-//	return 0;
-//}
+int main(int argc, char* argv[])
+{
+	// joint vectors q are of the form {theta1, theta2, d3, theta4}
+	JOINT q1 = {0, 0, -100, 0};
+	JOINT q2 = {90, 90, -200, 45};
+	printf("Keep this window in focus, and...\n");
+	
+	char ch;
+	int c;
+
+	const int ESC = 27;
+	
+	printf("1Press any key to continue \n");
+	printf("2Press ESC to exit \n");
+
+	c = _getch() ;
+
+	//---- test for INVKIN and KIN ----
+	// we will use kin to get the tool position in space relative to the base frame for joint vector q2
+	// this will be the goal that INVKIN must get a joint vector for, relative to a starting position of q1
+
+	// goal tool position for joint vector q2
+	double x, y, z, phi;
+	KIN(q2, x, y, z, phi);
+
+	// assign goal to a vec4 such that it can be passed to INVKIN
+	vec4 goal;
+	goal.data[0] = x;
+	goal.data[1] = y;
+	goal.data[2] = z;
+	goal.data[3] = phi;
+
+	// link lengths and joint offsets for transform matrices
+	a[0] = 0; a[1] = 195; a[2] = 142; a[3] = 0; a[4] = 0; a[5] = 0; 
+	d[0] = 405; d[1] = 70; d[2] = 0; d[3] = 410; d[4] = 130; d[5] = 0;
+
+	// use INVKIN to solve for a joint vector, which should be q2, and put it into invkin_sol
+	JOINT invkin_sol;
+	INVKIN(goal, q1, invkin_sol, 1);
+
+	// print q2 and the invkin soluion to see if they match
+	printf("goal: x= %.2f, y= %.2f, z= %.2f, phi= %.2f", x, y, z, phi);
+	printf("\nq2: theta1= %.2f, theta2= %.2f, d3= %.2f, theta4= %.2f\n", q2[0], q2[1], q2[2], q2[3]);
+	printf("invkin solution: theta1= %.2f, theta2= %.2f, d3= %.2f, theta4= %.2f\n\n", invkin_sol[0], invkin_sol[1], invkin_sol[2], invkin_sol[3]);
+
+	while (1)
+	{
+		
+		if (c != ESC)
+		{
+			printf("Press '1' or '2' \n");
+			ch = _getch();
+
+			if (ch == '1')
+			{
+				MoveToConfiguration(q1);
+				DisplayConfiguration(q1);
+				WHERE(q1);
+			}
+			else if (ch == '2')
+			{
+				MoveToConfiguration(q2);
+				DisplayConfiguration(q2);
+				WHERE(q2);
+			}
+
+			printf("Press any key to continue \n");
+			printf("Press q to exit \n");
+			c = _getch();
+		}
+		else
+			break;
+	}
+	
+
+	return 0;
+}
